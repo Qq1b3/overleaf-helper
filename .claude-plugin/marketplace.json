@@ -1,0 +1,13 @@
+{
+  "name": "overleaf-helper",
+  "owner": {
+    "name": "Jozef Janus"
+  },
+  "plugins": [
+    {
+      "name": "overleaf-helper",
+      "source": "./claude-skill",
+      "description": "Pull and push Overleaf projects; history, comments, suggestions and chat of all coauthors"
+    }
+  ]
+}

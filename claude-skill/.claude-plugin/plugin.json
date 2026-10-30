@@ -1,0 +1,7 @@
+{
+  "name": "overleaf-helper",
+  "description": "Pull and push Overleaf projects; history, comments, suggestions and chat of all coauthors",
+  "author": {
+    "name": "Jozef Janus"
+  }
+}
