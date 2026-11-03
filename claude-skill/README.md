@@ -4,7 +4,8 @@ A skill for Claude Code that works on Overleaf projects from a local folder. It 
 a git working copy and pushes local edits back, as plain edits or as tracked changes for coauthors
 to review. It shows what changed locally, on Overleaf or between history versions, and reads the
 edit history, comments, suggestions and chat of all coauthors together with the text they refer to.
-It accepts the suggestions of coauthors, compiles on Overleaf and shows who wrote which line.
+It accepts the suggestions of coauthors, compiles on Overleaf and shows who wrote which line. It
+also gives the edit and view links of a project.
 
 Example requests once installed:
 
@@ -15,6 +16,7 @@ Example requests once installed:
 - "Export all comments with the text they refer to as JSON."
 - "Upload my paper in ~/papers/icra to Overleaf as a new project."
 - "Does the project still compile on Overleaf?"
+- "Give me the edit link of our Overleaf paper."
 
 Claude picks the skill up from requests like these. It can also be called directly with
 `/overleaf-helper` (or `/overleaf-helper:overleaf-helper` when installed as a plugin).
@@ -80,6 +82,9 @@ expires, or after you log out of Overleaf in Chrome, copy it again.
   JSON. Comments are read-only.
 - `accept` accepts suggestions, chosen by ID, person or file. Like `push`, it first shows a dry run
   and accepts only with `--yes`. Rejecting suggestions is left to the review panel in Overleaf.
+- `share` shows the edit and view links of link sharing, and `share --on` or `--off` turns link
+  sharing on or off, like the Share dialog. While it is on, anyone with the edit link can edit the
+  project. Only the owner can turn it on or off.
 - Overleaf has no public API, so the tool uses the calls of the Overleaf editor. When Overleaf
   changes one, a command stops with the name of that call.
 
@@ -101,4 +106,5 @@ claude-skill/
     scripts/ol_push.py               push
     scripts/ol_review.py             history, timeline, comments, suggestions, replay
     scripts/ol_compile.py            compile on Overleaf, log summary
+    scripts/ol_share.py              share links, link sharing on and off
 ```

@@ -185,6 +185,17 @@ class Overleaf:
     def rename_project(self, project_id, name):
         self.write("POST", f"/project/{project_id}/rename", json={"newProjectName": name})
 
+    def share_tokens(self, project_id):
+        """Tokens of the share links, as the Share dialog reads them: {readOnly, readAndWrite,
+        readAndWritePrefix}. The edit link is BASE_URL/readAndWrite, the view link
+        BASE_URL/read/readOnly."""
+        return self.json(f"/project/{project_id}/tokens")
+
+    def set_link_sharing(self, project_id, on):
+        """Turn link sharing on or off, like the switch in the Share dialog; only the owner may."""
+        self.write("POST", f"/project/{project_id}/settings/admin",
+                   json={"publicAccessLevel": "tokenBased" if on else "private"})
+
     def download_zip(self, project_id):
         return self.request("GET", f"/project/{project_id}/download/zip").content
 

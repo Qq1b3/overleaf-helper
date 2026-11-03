@@ -20,6 +20,8 @@
     python overleaf.py push [--yes] [--track] send the local edits; a dry run without --yes
     python overleaf.py compile [--draft] [--out DIR]
                                               compile on Overleaf, fetch the PDF and sum up the log
+    python overleaf.py share [PROJECT] [--on | --off]
+                                              the edit and view links of link sharing; turn it on or off
     python overleaf.py replay                 the history as git commits with their authors, for
                                               git blame and git log on the branch history
 Commands on a working copy run inside it or take -C DIR. clone and pull keep a record of the
@@ -40,6 +42,7 @@ import ol_compile
 import ol_create
 import ol_push
 import ol_review
+import ol_share
 import ol_sync
 
 
@@ -284,6 +287,22 @@ def cmd_compile(args):
         sys.exit(f"Overleaf's compile ended with: {status}")
 
 
+def cmd_share(args):
+    api = ol_api.Overleaf()
+    if args.project:
+        project = ol_api.find_project(api.projects(), args.project)
+    else:
+        state = ol_sync.load_state(ol_sync.find_root(args.C))
+        project = {"id": state["project_id"], "name": state["name"]}
+    found = ol_share.links(api, project["id"], {"on": True, "off": False}.get(args.turn))
+    print(f"{project['name']}: link sharing {'on' if found['sharing'] else 'off'}")
+    if not found["sharing"]:
+        print("share --on turns it on: then anyone with the edit link can edit the project.")
+        return
+    print(f"  edit  {found['edit'] or 'only the owner of the project gets the edit link'}")
+    print(f"  view  {found['view'] or '-'}")
+
+
 def cmd_replay(args):
     root = record_root(args)
     commits = ol_review.replay(ol_api.Overleaf(), root, ol_sync.load_state(root)["project_id"])
@@ -412,6 +431,15 @@ def main():
     compile_parser.add_argument("--out", metavar="DIR", help=f"folder for output.pdf and output.log "
                                                              f"(default {ol_compile.OUTPUT.as_posix()})")
     compile_parser.add_argument("--draft", action="store_true", help="draft mode: faster, images as boxes")
+    share = commands.add_parser("share", parents=[working_copy],
+                                help="the edit and view links of link sharing; turn it on or off")
+    share.add_argument("project", nargs="?",
+                       help="name, unique start of the name, ID or URL of the project (default: the working copy's)")
+    turn = share.add_mutually_exclusive_group()
+    turn.add_argument("--on", dest="turn", action="store_const", const="on",
+                      help="turn link sharing on: anyone with the edit link can then edit the project")
+    turn.add_argument("--off", dest="turn", action="store_const", const="off",
+                      help="turn link sharing off: the links stop working")
     commands.add_parser("replay", parents=[working_copy],
                         help=f"the history as git commits with their authors on the branch {ol_review.REPLAY}")
     args = parser.parse_args()

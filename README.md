@@ -40,6 +40,7 @@ Ask Claude, for example:
 - "Accept Anna's suggestions in intro.tex."
 - "Export all comments with the text they refer to as JSON."
 - "Upload my paper in ~/papers/icra to Overleaf as a new project."
+- "Give me the edit link of our Overleaf paper."
 
 Claude shows every push and every accept of suggestions as a dry run first and sends it only after
 your OK. The commands it uses, which also work in a terminal (`overleaf.py --help`):
@@ -51,6 +52,7 @@ your OK. The commands it uses, which also work in a terminal (`overleaf.py --hel
 | `history`, `timeline` | who changed what when; every event of all coauthors in time order |
 | `comments`, `changes`, `accept` | comments with the text they refer to; suggestions waiting for review; accept them |
 | `compile`, `replay` | the build on Overleaf; the history as git commits for `git blame` |
+| `share` | the edit and view links of link sharing; turn it on or off |
 
 The skill and its code are in [claude-skill/](claude-skill/), with more on installing and logging in
 in [claude-skill/README.md](claude-skill/README.md).
