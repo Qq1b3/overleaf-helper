@@ -251,6 +251,10 @@ class Overleaf:
     def delete(self, project_id, kind, entity_id):
         self.write("DELETE", f"/project/{project_id}/{kind}/{entity_id}")
 
+    def accept_changes(self, project_id, doc_id, change_ids):
+        """Accept tracked changes of one doc, like Accept in the review panel; the text stays as it is."""
+        self.write("POST", f"/project/{project_id}/doc/{doc_id}/changes/accept", json={"change_ids": change_ids})
+
     def compile(self, project_id, root_doc_id=None, draft=False):
         """Compile the project on Overleaf, like Recompile in the editor. Returns {status, outputFiles:
         [{path, url, type, build}], pdfDownloadDomain, clsiServerId, compileGroup, ...}; status is

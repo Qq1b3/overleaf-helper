@@ -37,18 +37,19 @@ Ask Claude, for example:
 - "Clone our Overleaf paper https://www.overleaf.com/project/... and list the open comments."
 - "What did my coauthors change and discuss since Monday?"
 - "Fix the typos in the introduction and push them as suggestions."
+- "Accept Anna's suggestions in intro.tex."
 - "Export all comments with the text they refer to as JSON."
 - "Upload my paper in ~/papers/icra to Overleaf as a new project."
 
-Claude shows every push as a dry run first and sends it only after your OK. The commands it uses,
-which also work in a terminal (`overleaf.py --help`):
+Claude shows every push and every accept of suggestions as a dry run first and sends it only after
+your OK. The commands it uses, which also work in a terminal (`overleaf.py --help`):
 
 | Command | What it does |
 |---|---|
 | `projects`, `create`, `clone`, `pull`, `push` | list projects, create a project, make a working copy, bring changes in, send edits |
 | `status`, `diff` | what changed locally, on Overleaf, or between history versions |
 | `history`, `timeline` | who changed what when; every event of all coauthors in time order |
-| `comments`, `changes` | comments with the text they refer to; suggestions waiting for review |
+| `comments`, `changes`, `accept` | comments with the text they refer to; suggestions waiting for review; accept them |
 | `compile`, `replay` | the build on Overleaf; the history as git commits for `git blame` |
 
 The skill and its code are in [claude-skill/](claude-skill/), with more on installing and logging in

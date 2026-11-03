@@ -65,7 +65,7 @@ deletion, so the text of the files reads as if every suggestion were accepted.
 
 | Field | Meaning |
 |---|---|
-| `id` | ID of the tracked change |
+| `id` | ID of the tracked change; `accept ID` accepts it |
 | `file`, `line`, `offset` | where it is; a deletion is at the place the deleted text was |
 | `kind` | `insert` or `delete` |
 | `text` | the inserted or deleted text |

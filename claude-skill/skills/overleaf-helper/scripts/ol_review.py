@@ -447,6 +447,41 @@ def suggestions(docs, names):
     return found
 
 
+def replacements(found):
+    """{ID: ID of the other part} of each replaced text among the suggestions: a deletion right after an
+    insertion by the same person, which the review panel shows and accepts as one."""
+    deletions = {(change["file"], change["offset"], change["user"]): change["id"]
+                 for change in found if change["kind"] == "delete"}
+    pairs = {}
+    for change in found:
+        other = deletions.get((change["file"], change["offset"] + len(change["text"]), change["user"]))
+        if change["kind"] == "insert" and other:
+            pairs[change["id"]], pairs[other] = other, change["id"]
+    return pairs
+
+
+def select_suggestions(found, ids=(), user=None, file=None):
+    """The suggestions with these IDs, by people whose name contains user, in file. The ID of one part
+    of a replaced text also selects the other part."""
+    pairs = replacements(found)
+    wanted = set(ids) | {pairs[change_id] for change_id in ids if change_id in pairs}
+    return [change for change in found
+            if (not ids or change["id"] in wanted)
+            and (user is None or user.casefold() in change["user"].casefold())
+            and (file is None or change["file"] == file)]
+
+
+def accept(api, project_id, change_ids):
+    """Accept these tracked changes on Overleaf, doc by doc. Returns those that Overleaf still lists."""
+    wanted = set(change_ids)
+    for doc in api.ranges(project_id):
+        ids = [change["id"] for change in doc["ranges"].get("changes", []) if change["id"] in wanted]
+        if ids:
+            api.accept_changes(project_id, doc["id"], ids)
+    return sorted(wanted & {change["id"] for doc in api.ranges(project_id)
+                            for change in doc["ranges"].get("changes", [])})
+
+
 def write_inline(target, docs, found, changes):
     """Copies of the docs with comments and suggestions marked in the text, and the threads and
     suggestions as % lines after the line where each ends. Returns the written files."""
@@ -583,5 +618,6 @@ def suggestions_as_text(found):
             at = (change["file"], change["line"])
             lines.append(f"{change['file']}:{change['line']}  {change['marked_line']}")
         verb = "inserted" if change["kind"] == "insert" else "deleted"
-        lines.append(f"    {change['user']}, {local(change['time'])}: {verb} “{one_line(change['text'])}”")
+        lines.append(f"    {change['user']}, {local(change['time'])}: {verb} “{one_line(change['text'])}”  "
+                     f"(ID {change['id']})")
     return "\n".join(lines)

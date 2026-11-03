@@ -4,13 +4,14 @@ A skill for Claude Code that works on Overleaf projects from a local folder. It 
 a git working copy and pushes local edits back, as plain edits or as tracked changes for coauthors
 to review. It shows what changed locally, on Overleaf or between history versions, and reads the
 edit history, comments, suggestions and chat of all coauthors together with the text they refer to.
-It also compiles on Overleaf and shows who wrote which line.
+It accepts the suggestions of coauthors, compiles on Overleaf and shows who wrote which line.
 
 Example requests once installed:
 
 - "Clone our Overleaf paper https://www.overleaf.com/project/... and list the open comments."
 - "What did my coauthors change and discuss since Monday?"
 - "Fix the typos in the introduction and push them as suggestions."
+- "Accept Anna's suggestions in intro.tex."
 - "Export all comments with the text they refer to as JSON."
 - "Upload my paper in ~/papers/icra to Overleaf as a new project."
 - "Does the project still compile on Overleaf?"
@@ -77,6 +78,8 @@ expires, or after you log out of Overleaf in Chrome, copy it again.
   stay on their words.
 - `timeline`, `history`, `comments` and `changes` show what all coauthors did, as text, Markdown or
   JSON. Comments are read-only.
+- `accept` accepts suggestions, chosen by ID, person or file. Like `push`, it first shows a dry run
+  and accepts only with `--yes`. Rejecting suggestions is left to the review panel in Overleaf.
 - Overleaf has no public API, so the tool uses the calls of the Overleaf editor. When Overleaf
   changes one, a command stops with the name of that call.
 

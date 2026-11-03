@@ -15,6 +15,8 @@
     python overleaf.py timeline [--since DATE] [--user NAME] [--file FILE] [--md | --json]
     python overleaf.py comments [--open] [--context N] [--md | --json | --inline [DIR]]
     python overleaf.py changes [--json]       tracked changes waiting to be accepted or rejected
+    python overleaf.py accept [ID ...] [--user NAME] [--file FILE] [--all] [--yes]
+                                              accept suggestions; a dry run without --yes
     python overleaf.py push [--yes] [--track] send the local edits; a dry run without --yes
     python overleaf.py compile [--draft] [--out DIR]
                                               compile on Overleaf, fetch the PDF and sum up the log
@@ -304,6 +306,33 @@ def cmd_changes(args):
     print(ol_review.as_json(found) if args.json else ol_review.suggestions_as_text(found) or "No tracked changes.")
 
 
+def cmd_accept(args):
+    if not (args.ids or args.user or args.file or args.all):
+        sys.exit("Say which suggestions to accept: their IDs (from changes), --user, --file or --all.")
+    project_id = ol_sync.load_state(ol_sync.find_root(args.C))["project_id"]
+    api = ol_api.Overleaf()
+    _, docs, names = ol_review.read_live(api, project_id)
+    found = ol_review.suggestions(docs, names)
+    unknown = sorted(set(args.ids) - {change["id"] for change in found})
+    if unknown:
+        sys.exit("No suggestion on Overleaf has these IDs; were they accepted or rejected meanwhile? "
+                 + ", ".join(unknown))
+    chosen = ol_review.select_suggestions(found, args.ids, args.user, args.file)
+    if not chosen:
+        print("No suggestions match.")
+        return
+    print(f"Accept {len(chosen)} of {len(found)} suggestions on Overleaf:")
+    print(ol_review.suggestions_as_text(chosen))
+    if not args.yes:
+        print("\nDry run: nothing was accepted. To accept them, run the same command with --yes.")
+        return
+    left = ol_review.accept(api, project_id, [change["id"] for change in chosen])
+    if left:
+        sys.exit(f"\nOverleaf still lists {len(left)} of them as suggestions: {', '.join(left)}")
+    print(f"\nAccepted {len(chosen)} suggestion{'' if len(chosen) == 1 else 's'}. The text on Overleaf stays as "
+          "it was, so the working copy needs no pull.")
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="Pull and push Overleaf projects, show history and comments.")
@@ -367,6 +396,13 @@ def main():
     changes = commands.add_parser("changes", parents=[working_copy],
                                   help="tracked changes waiting to be accepted or rejected, read live")
     changes.add_argument("--json", action="store_true", help="as JSON")
+    accept = commands.add_parser("accept", parents=[working_copy],
+                                 help="accept suggestions of coauthors on Overleaf; without --yes only a dry run")
+    accept.add_argument("ids", nargs="*", metavar="ID", help="IDs of the suggestions, as changes lists them")
+    accept.add_argument("--user", metavar="NAME", help="the suggestions of people whose name contains NAME")
+    accept.add_argument("--file", help="the suggestions in this file")
+    accept.add_argument("--all", action="store_true", help="every suggestion")
+    accept.add_argument("--yes", action="store_true", help="really accept them")
     push = commands.add_parser("push", parents=[working_copy],
                                help="send the local edits to Overleaf; without --yes only a dry run")
     push.add_argument("--yes", action="store_true", help="really send it")
