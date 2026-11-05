@@ -17,6 +17,14 @@
     python overleaf.py changes [--json]       tracked changes waiting to be accepted or rejected
     python overleaf.py accept [ID ...] [--user NAME] [--file FILE] [--all] [--yes]
                                               accept suggestions; a dry run without --yes
+    python overleaf.py comment FILE TEXT MESSAGE [--line N] [--yes]
+                                              comment on TEXT, as you; a dry run without --yes
+    python overleaf.py reply ID MESSAGE [--yes]
+                                              answer a comment; a dry run without --yes
+    python overleaf.py resolve ID ... [--yes] resolve comments; a dry run without --yes
+    python overleaf.py suggest FILE TEXT NEW [--line N] [--yes]
+                                              suggest NEW instead of TEXT as your tracked change;
+                                              a dry run without --yes
     python overleaf.py push [--yes] [--track] send the local edits; a dry run without --yes
     python overleaf.py compile [--draft] [--out DIR]
                                               compile on Overleaf, fetch the PDF and sum up the log
@@ -36,6 +44,7 @@ from pathlib import Path
 
 import requests
 
+import ol_annotate
 import ol_api
 import ol_auth
 import ol_compile
@@ -352,8 +361,58 @@ def cmd_accept(args):
           "it was, so the working copy needs no pull.")
 
 
+DRY_RUN = "\nDry run: nothing was written. To write it, run the same command with --yes."
+
+
+def indented(text):
+    return "  " + text.replace("\n", "\n  ")
+
+
+def cmd_comment(args):
+    project_id = ol_sync.load_state(ol_sync.find_root(args.C))["project_id"]
+    found = ol_annotate.comment(ol_api.Overleaf(), project_id, args.file, args.text, args.message, args.line,
+                                args.yes)
+    print(f"Comment on {found['file']}:{found['line']}, as you:\n{found['excerpt']}\n"
+          f"Message:\n{indented(args.message)}")
+    if not args.yes:
+        print(DRY_RUN)
+        return
+    print(f"\nCommented (ID {found['thread']}). The text stays as it is, so the working copy needs no pull.")
+
+
+def cmd_reply(args):
+    project_id = ol_sync.load_state(ol_sync.find_root(args.C))["project_id"]
+    found = ol_annotate.reply(ol_api.Overleaf(), project_id, args.id, args.message, args.yes)
+    print(f"Answer this comment, as you:\n{indented(ol_review.comments_as_text([found]))}\n"
+          f"Answer:\n{indented(args.message)}")
+    print(DRY_RUN if not args.yes else "\nAnswered.")
+
+
+def cmd_resolve(args):
+    project_id = ol_sync.load_state(ol_sync.find_root(args.C))["project_id"]
+    found = ol_annotate.resolve(ol_api.Overleaf(), project_id, args.ids, args.yes)
+    print(f"Resolve {len(found)} comment{'' if len(found) == 1 else 's'}:\n"
+          f"{indented(ol_review.comments_as_text(found))}")
+    done = [entry["thread"] for entry in found if entry["status"] != "open"]
+    if done:
+        print(f"Already resolved, left as they are: {', '.join(done)}")
+    print(DRY_RUN if not args.yes else "\nResolved. The text stays as it is, so the working copy needs no pull.")
+
+
+def cmd_suggest(args):
+    project_id = ol_sync.load_state(ol_sync.find_root(args.C))["project_id"]
+    found = ol_annotate.suggest(ol_api.Overleaf(), project_id, args.file, args.text, args.new, args.line, args.yes)
+    print(f"Suggest in {found['file']}, as your tracked change for coauthors to accept or reject:\n"
+          f"{found['excerpt']}")
+    if not args.yes:
+        print(DRY_RUN)
+        return
+    print("\nSuggested. The text on Overleaf now contains the suggestion: pull before editing or pushing.")
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="Pull and push Overleaf projects, show history and comments.")
     commands = parser.add_subparsers(dest="command", required=True)
     login = commands.add_parser("login", help="store the overleaf_session2 cookie copied from Chrome")
@@ -422,6 +481,30 @@ def main():
     accept.add_argument("--file", help="the suggestions in this file")
     accept.add_argument("--all", action="store_true", help="every suggestion")
     accept.add_argument("--yes", action="store_true", help="really accept them")
+    find_text = argparse.ArgumentParser(add_help=False)
+    find_text.add_argument("file", metavar="FILE", help="path of the file in the project")
+    find_text.add_argument("text", metavar="TEXT",
+                           help="the text as it is on Overleaf; any white space matches any, line breaks too")
+    find_text.add_argument("--line", type=int, metavar="N",
+                           help="the place of the text that starts on line N, when it is there more than once")
+    comment = commands.add_parser("comment", parents=[working_copy, find_text],
+                                  help="comment on text on Overleaf, as you; without --yes only a dry run")
+    comment.add_argument("message", metavar="MESSAGE", help="the comment")
+    comment.add_argument("--yes", action="store_true", help="really write it")
+    reply = commands.add_parser("reply", parents=[working_copy],
+                                help="answer a comment on Overleaf, as you; without --yes only a dry run")
+    reply.add_argument("id", metavar="ID", help="ID of the comment, as comments lists it")
+    reply.add_argument("message", metavar="MESSAGE", help="the answer")
+    reply.add_argument("--yes", action="store_true", help="really write it")
+    resolve = commands.add_parser("resolve", parents=[working_copy],
+                                  help="resolve comments on Overleaf; without --yes only a dry run")
+    resolve.add_argument("ids", nargs="+", metavar="ID", help="IDs of the comments, as comments lists them")
+    resolve.add_argument("--yes", action="store_true", help="really resolve them")
+    suggest = commands.add_parser("suggest", parents=[working_copy, find_text],
+                                  help="suggest a change on Overleaf as your tracked change; without --yes only a "
+                                       "dry run")
+    suggest.add_argument("new", metavar="NEW", help="the text instead of TEXT; empty to suggest deleting TEXT")
+    suggest.add_argument("--yes", action="store_true", help="really write it")
     push = commands.add_parser("push", parents=[working_copy],
                                help="send the local edits to Overleaf; without --yes only a dry run")
     push.add_argument("--yes", action="store_true", help="really send it")
@@ -446,7 +529,8 @@ def main():
 
     try:
         globals()[f"cmd_{args.command}"](args)
-    except (ol_auth.AuthError, ol_api.OverleafError, ol_sync.SyncError, ol_push.PushError) as error:
+    except (ol_auth.AuthError, ol_api.OverleafError, ol_sync.SyncError, ol_push.PushError,
+            ol_annotate.AnnotateError) as error:
         sys.exit(str(error))
     except requests.RequestException as error:
         sys.exit(f"Could not reach Overleaf: {error}")

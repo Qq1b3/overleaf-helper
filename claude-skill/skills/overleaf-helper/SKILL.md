@@ -1,6 +1,6 @@
 ---
 name: overleaf-helper
-description: Work on Overleaf projects from Claude Code. Pulls a project into a local git working copy and pushes local edits back, as plain edits or as tracked changes for coauthors to review; accepts the coauthors' suggestions; creates new projects, also from a local paper folder; shows what changed locally, on Overleaf or between history versions; reads the edit history, comments, suggestions and chat of all coauthors together with the text they refer to; compiles on Overleaf and shows who wrote which line; gives a project's share links. Logs in with the session cookie of the user's Overleaf login, so organisation login works. Use when someone mentions an Overleaf project or link, wants to pull, push or sync a paper with Overleaf or put a local paper on Overleaf, asks what coauthors changed or commented, wants comments or suggestions exported for review or suggestions accepted, wants a share link, or wants to know whether the project still compiles on Overleaf.
+description: Work on Overleaf projects from Claude Code. Pulls a project into a local git working copy and pushes local edits back, as plain edits or as tracked changes; comments on text, answers and resolves comments, suggests changes and accepts the coauthors' suggestions; creates new projects, also from a local paper folder; shows what changed locally, on Overleaf or between history versions; reads the history, comments, suggestions and chat of all coauthors with the text they refer to; compiles on Overleaf, shows who wrote which line and gives share links. Logs in with the session cookie of the user's Overleaf login, so organisation login works. Use when someone mentions an Overleaf project or link, wants to pull, push or sync a paper with Overleaf or put a local paper on Overleaf, asks what coauthors changed or commented, wants to comment, answer a comment or suggest a change, wants comments or suggestions exported or accepted, wants a share link, or asks whether the project still compiles on Overleaf.
 ---
 
 # Overleaf helper
@@ -46,6 +46,21 @@ The tool uses the session cookie of the user's Overleaf login, kept in the syste
 6. **Build.** After larger edits, or when asked, `compile` compiles on Overleaf, saves the PDF in
    `.overleaf/output/` and lists the errors and warnings of the log with file and line.
 
+## Comments and suggestions
+
+These commands write to the review panel under the user's name, on the text as it is on Overleaf
+now, not in the working copy. TEXT is a piece of that text in FILE; any white space in it matches
+any, so a passage over several lines can be given on one line. When it is there more than once,
+`--line N` picks the place that starts on line N, or give more of the text.
+
+- `comment FILE TEXT MESSAGE` comments on TEXT.
+- `reply ID MESSAGE` answers a comment, `resolve ID...` resolves comments; `comments` gives the IDs.
+- `suggest FILE TEXT NEW` suggests NEW instead of TEXT as a tracked change, word by word; an empty
+  NEW suggests deleting TEXT. Give a few words around the change, so that TEXT is found once.
+  Overleaf's text then contains the suggestion: pull before editing. For many edits at once, edit
+  the working copy and `push --track` instead. To give the reason for a suggestion, comment on its
+  new text.
+
 ## Rules
 
 - Never push without showing the dry run and getting an explicit OK for it; after further edits,
@@ -56,7 +71,10 @@ The tool uses the session cookie of the user's Overleaf login, kept in the syste
   and push again.
 - When a pull reports merge conflicts, stop and show the files. Resolve the conflict markers only
   together with the user, then run `git add` and `git commit` in the working copy.
-- Comments are read-only: the tool cannot write, answer or resolve them. Say so instead of trying.
+- Write comments, answers, resolves and suggestions only when the user asks for them. Run `comment`,
+  `reply`, `resolve` or `suggest` first without `--yes`, show the dry run with the exact message or
+  change, and run it with `--yes` only after an explicit OK for it. The tool cannot edit or delete a
+  comment or reopen a resolved one: say so and point to the review panel in Overleaf.
 - Accept suggestions only when the user asks for it. Run `accept` with the IDs that `changes` lists,
   or with `--user`, `--file` or `--all`, first without `--yes`: show the dry run and accept with
   `--yes` only after an explicit OK for it. Accepting cannot be undone from the tool. The ID of one
@@ -83,17 +101,21 @@ The tool uses the session cookie of the user's Overleaf login, kept in the syste
 | `diff --from V --to V` | changes between two Overleaf history versions |
 | `history [FILE] [--diff]` | who changed which files when; `--diff` adds the changed text |
 | `timeline [--since DATE] [--user NAME] [--file FILE] [--md \| --json]` | every event of all coauthors in time order |
-| `comments [--open] [--context N] [--md \| --json]` | comments with file, lines, highlighted text and thread |
+| `comments [--open] [--context N] [--md \| --json]` | comments with file, lines, highlighted text, thread and ID |
 | `comments --inline` | copies of the files with comments and suggestions marked in the text, in `.overleaf/inline/` |
 | `changes [--json]` | suggestions waiting to be accepted or rejected, each with its line marked and its ID |
 | `accept ID... \| --user NAME \| --file FILE \| --all [--yes]` | accept suggestions on Overleaf; a dry run without `--yes` |
+| `comment FILE TEXT MESSAGE [--line N] [--yes]` | comment on TEXT; a dry run without `--yes`, as for the next three |
+| `reply ID MESSAGE [--yes]` | answer a comment |
+| `resolve ID... [--yes]` | resolve comments |
+| `suggest FILE TEXT NEW [--line N] [--yes]` | suggest NEW instead of TEXT as a tracked change |
 | `compile [--draft]` | compile on Overleaf, save the PDF and the log, list errors and warnings |
 | `replay` | the history as git commits on the branch `history`; then `git blame history -- FILE` |
 | `share [PROJECT] [--on \| --off]` | whether link sharing is on, with the edit and view links; turns it on or off. PROJECT as for `clone`, default the working copy's |
 
-`history` and `timeline` read the record that `clone` and `pull` keep in `.overleaf/`; `comments`,
-`changes`, `accept`, `compile` and `share` ask Overleaf live. Dates for `--since` are `2026-10-29` or
-`"2026-10-29 14:00"`.
+`history` and `timeline` read the record that `clone` and `pull` keep in `.overleaf/`; the commands
+for comments and suggestions, `compile` and `share` ask Overleaf live. Dates for `--since` are
+`2026-10-29` or `"2026-10-29 14:00"`.
 
 In all outputs deleted text is marked `[-like this-]` and inserted text `{+like this+}`. The
 `--inline` copies wrap a comment's text in `⟦C1⟧…⟦/C1⟧` and give its thread as `%` lines after the

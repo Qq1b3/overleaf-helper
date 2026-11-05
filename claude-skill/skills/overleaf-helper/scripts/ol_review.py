@@ -497,7 +497,8 @@ def write_inline(target, docs, found, changes):
         notes = {}
         for comment in mine:
             state = comment["status"] + (f" by {comment['resolved_by']}" if comment.get("resolved_by") else "")
-            notes.setdefault(comment["last_line"], []).append(f"% ⟦C{numbers[comment['thread']]}⟧ {state}")
+            notes.setdefault(comment["last_line"], []).append(
+                f"% ⟦C{numbers[comment['thread']]}⟧ {state} (ID {comment['thread']})")
             notes[comment["last_line"]] += [f"%   {message['user']} ({local(message['time'])}): {one_line(message['text'])}"
                                             for message in comment["messages"]]
         for change in theirs:
@@ -589,7 +590,7 @@ def comments_as_text(found):
     lines = []
     for comment in found:
         quote = f"  “{shorten(comment['quote'])}”" if comment.get("quote") else ""
-        lines.append(f"{place(comment)}  {state(comment)}{quote}")
+        lines.append(f"{place(comment)}  {state(comment)}{quote}  (ID {comment['thread']})")
         lines += [f"    {message['user']}, {local(message['time'])}: {message['text']}".replace("\n", "\n      ")
                   for message in comment["messages"]]
     return "\n".join(lines)
@@ -598,7 +599,7 @@ def comments_as_text(found):
 def comments_as_markdown(found, title):
     lines = [f"# {title}"]
     for comment in found:
-        lines += ["", f"## {place(comment)} ({state(comment)})", ""]
+        lines += ["", f"## {place(comment)} ({state(comment)}, ID {comment['thread']})", ""]
         if comment.get("quote"):
             lines += [f"> {line}" for line in comment["quote"].split("\n")] + [""]
         elif comment["file"]:

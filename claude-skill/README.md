@@ -4,8 +4,9 @@ A skill for Claude Code that works on Overleaf projects from a local folder. It 
 a git working copy and pushes local edits back, as plain edits or as tracked changes for coauthors
 to review. It shows what changed locally, on Overleaf or between history versions, and reads the
 edit history, comments, suggestions and chat of all coauthors together with the text they refer to.
-It accepts the suggestions of coauthors, compiles on Overleaf and shows who wrote which line. It
-also gives the edit and view links of a project.
+It comments on text, answers and resolves comments, suggests changes and accepts the suggestions
+of coauthors. It compiles on Overleaf, shows who wrote which line and gives the edit and view links
+of a project.
 
 Example requests once installed:
 
@@ -13,6 +14,7 @@ Example requests once installed:
 - "What did my coauthors change and discuss since Monday?"
 - "Fix the typos in the introduction and push them as suggestions."
 - "Accept Anna's suggestions in intro.tex."
+- "Comment that the abstract is too long, and suggest a shorter first sentence."
 - "Export all comments with the text they refer to as JSON."
 - "Upload my paper in ~/papers/icra to Overleaf as a new project."
 - "Does the project still compile on Overleaf?"
@@ -79,7 +81,11 @@ expires, or after you log out of Overleaf in Chrome, copy it again.
   Claude asks you before. Text files get word-level edits, like typing in the editor, so comments
   stay on their words.
 - `timeline`, `history`, `comments` and `changes` show what all coauthors did, as text, Markdown or
-  JSON. Comments are read-only.
+  JSON.
+- `comment`, `reply`, `resolve` and `suggest` write to the review panel under your name: a comment
+  on text, an answer, a resolved comment, or a suggested change that coauthors accept or reject.
+  Like `push`, each first shows a dry run and writes only with `--yes`. Editing or deleting comments
+  is left to the review panel in Overleaf.
 - `accept` accepts suggestions, chosen by ID, person or file. Like `push`, it first shows a dry run
   and accepts only with `--yes`. Rejecting suggestions is left to the review panel in Overleaf.
 - `share` shows the edit and view links of link sharing, and `share --on` or `--off` turns link
@@ -105,6 +111,7 @@ claude-skill/
     scripts/ol_sync.py               git working copy: clone, pull, status, diff
     scripts/ol_push.py               push
     scripts/ol_review.py             history, timeline, comments, suggestions, replay
+    scripts/ol_annotate.py           comment, reply, resolve, suggest
     scripts/ol_compile.py            compile on Overleaf, log summary
     scripts/ol_share.py              share links, link sharing on and off
 ```

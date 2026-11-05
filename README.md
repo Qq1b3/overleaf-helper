@@ -38,12 +38,14 @@ Ask Claude, for example:
 - "What did my coauthors change and discuss since Monday?"
 - "Fix the typos in the introduction and push them as suggestions."
 - "Accept Anna's suggestions in intro.tex."
+- "Comment that the abstract is too long, and suggest a shorter first sentence."
 - "Export all comments with the text they refer to as JSON."
 - "Upload my paper in ~/papers/icra to Overleaf as a new project."
 - "Give me the edit link of our Overleaf paper."
 
-Claude shows every push and every accept of suggestions as a dry run first and sends it only after
-your OK. The commands it uses, which also work in a terminal (`overleaf.py --help`):
+Claude shows everything it would write to Overleaf, such as a push, a comment or a suggestion, as a
+dry run first and sends it only after your OK. The commands it uses, which also work in a terminal
+(`overleaf.py --help`):
 
 | Command | What it does |
 |---|---|
@@ -51,6 +53,7 @@ your OK. The commands it uses, which also work in a terminal (`overleaf.py --hel
 | `status`, `diff` | what changed locally, on Overleaf, or between history versions |
 | `history`, `timeline` | who changed what when; every event of all coauthors in time order |
 | `comments`, `changes`, `accept` | comments with the text they refer to; suggestions waiting for review; accept them |
+| `comment`, `reply`, `resolve`, `suggest` | comment on text, answer or resolve comments; suggest a change for review |
 | `compile`, `replay` | the build on Overleaf; the history as git commits for `git blame` |
 | `share` | the edit and view links of link sharing; turn it on or off |
 

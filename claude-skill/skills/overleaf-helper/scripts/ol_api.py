@@ -116,6 +116,12 @@ def _now():
     return int(time.time() * 1000)
 
 
+def new_id():
+    """A new ID as the editor makes them for comment threads: 24 hex characters like a MongoDB
+    ObjectId, the time first."""
+    return f"{int(time.time()):08x}{secrets.token_hex(8)}"
+
+
 class Overleaf:
     """HTTP calls with the stored session cookie, at a polite pace, retried on server errors."""
 
@@ -266,6 +272,19 @@ class Overleaf:
         """Accept tracked changes of one doc, like Accept in the review panel; the text stays as it is."""
         self.write("POST", f"/project/{project_id}/doc/{doc_id}/changes/accept", json={"change_ids": change_ids})
 
+    def add_thread_message(self, project_id, thread_id, content):
+        """Add a message to a comment thread, by the logged-in user. The first message makes the thread,
+        which shows in the review panel once a doc marks its text (Realtime.add_comment)."""
+        self.write("POST", f"/project/{project_id}/thread/{thread_id}/messages", json={"content": content})
+
+    def resolve_thread(self, project_id, doc_id, thread_id):
+        """Resolve a comment thread, like Resolve in the review panel; its text stays marked."""
+        self.write("POST", f"/project/{project_id}/doc/{doc_id}/thread/{thread_id}/resolve")
+
+    def delete_thread(self, project_id, doc_id, thread_id):
+        """Delete a comment thread with its messages and its mark in the doc."""
+        self.write("DELETE", f"/project/{project_id}/doc/{doc_id}/thread/{thread_id}")
+
     def compile(self, project_id, root_doc_id=None, draft=False):
         """Compile the project on Overleaf, like Recompile in the editor. Returns {status, outputFiles:
         [{path, url, type, build}], pdfDownloadDomain, clsiServerId, compileGroup, ...}; status is
@@ -400,6 +419,11 @@ class Realtime:
             applied = event["args"][0]
             if applied.get("doc") == doc_id and "op" not in applied:  # ours; others' updates carry their op
                 return applied["v"] + 1
+
+    def add_comment(self, doc_id, thread_id, offset, text, version):
+        """Mark text at offset of an open doc as the place of a comment thread; Overleaf refuses it when
+        the doc does not have this text there. Returns the doc's version after the update."""
+        return self.apply_update(doc_id, [{"c": text, "p": offset, "t": thread_id}], version)
 
     def close(self):
         try:

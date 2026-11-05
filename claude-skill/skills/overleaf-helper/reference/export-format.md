@@ -45,7 +45,7 @@ resolved ones.
 
 | Field | Meaning |
 |---|---|
-| `thread` | ID of the comment thread |
+| `thread` | ID of the comment thread; `reply ID` and `resolve ID` take it |
 | `file` | path of the file |
 | `line`, `last_line` | first and last line of the highlighted text, counted from 1 |
 | `offset` | position of the highlighted text in the file, in characters from the start |
@@ -81,11 +81,11 @@ deletion, so the text of the files reads as if every suggestion were accepted.
   comment whose text was deleted is `⟦C1⟧⟦/C1⟧` at the place of the deletion. Overlapping comments
   nest as they fall: `⟦C4⟧one long ⟦C5⟧source line⟦/C4⟧, as LaTeX⟦/C5⟧`.
 - Suggestions are marked `{+inserted+}` and `[-deleted-]`; a line break in deleted text becomes `↵`.
-- After the line where a comment ends, `%` lines give its number, status and messages:
+- After the line where a comment ends, `%` lines give its number, status, thread ID and messages:
 
 ```latex
 Open comment: ⟦C1⟧this sentence gets a comment that stays open.⟦/C1⟧
-% ⟦C1⟧ open
+% ⟦C1⟧ open (ID 00000000000000000000000d)
 %   Test User1 (2026-10-29 10:50): Open comment
 ```
 
